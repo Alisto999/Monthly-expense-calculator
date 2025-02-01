@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monthly Expense Tracker</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #ffffff;
+            color: #333333;
+            max-width: 900px;
+            margin: auto;
+            padding: 20px;
+            border: 2px solid #333;
+            border-radius: 10px;
+        }
+        header {
+            background-color: #121212;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 24px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .container {
+            text-align: center;
+            margin-top: 20px;
+        }
+        .column {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 10px 0;
+            border: 1px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .category-list {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: flex-start;
+            margin: 20px;
+            width: 100%;
+        }
+        .category-item {
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+            border: 1px solid #fff;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+        }
+        .category-item input {
+            margin-left: 10px;
+            padding: 5px;
+            width: 100px;
+            border: none;
+            border-radius: 5px;
+        }
+        .input-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+        }
+        input, button {
+            margin: 5px;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+        }
+        button {
+            cursor: pointer;
+        }
+        canvas {
+            background-color: #222;
+            border-radius: 10px;
+            width: 80%;
+            height: 300px;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        Monthly Expense Tracker
+    </header>
+
+    <div class="container">
+        <div class="column">
+            <label for="income">Monthly Income:</label>
+            <input type="number" id="income" placeholder="Enter your income">
+        </div>
+
+        <div class="column">
+            <h3>Enter Expense Categories and Amounts</h3>
+            <div class="category-list">
+                <div class="category-item">
+                    <span>Rent</span>
+                    <input type="number" id="rent-amount" placeholder="Amount">
+                </div>
+                <div class="category-item">
+                    <span>Food</span>
+                    <input type="number" id="food-amount" placeholder="Amount">
+                </div>
+                <div class="category-item">
+                    <span>Other Expenses</span>
+                    <input type="number" id="other-amount" placeholder="Amount">
+                </div>
+                <div class="category-item">
+                    <span>EMI's</span>
+                    <input type="number" id="emi-amount" placeholder="Amount">
+                </div>
+                <div class="category-item">
+                    <span>Emergency Fund</span>
+                    <input type="number" id="emergency-amount" placeholder="Amount">
+                </div>
+                <div class="category-item">
+                    <span>SIP's</span>
+                    <input type="number" id="sip-amount" placeholder="Amount">
+                </div>
+                <div class="category-item">
+                    <span>Term Insurance</span>
+                    <input type="number" id="insurance-amount" placeholder="Amount">
+                </div>
+                <div class="category-item">
+                    <span>Health Insurance</span>
+                    <input type="number" id="health-amount" placeholder="Amount">
+                </div>
+            </div>
+            <button onclick="addExpenses()">Add Expenses</button>
+            <button onclick="clearData()">Clear Data</button>  <!-- Added Clear Data Button -->
+        </div>
+
+        <div class="column">
+            <h2>Summary</h2>
+            <p>Total Expenses: $<span id="total-expenses">0.00</span></p>
+            <p>Remaining Balance: $<span id="balance">0.00</span></p>
+        </div>
+
+        <div class="column">
+            <h2>Expense Breakdown</h2>
+            <canvas id="expenseChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        let expenses = [];
+        let income = 0;
+        let chartInstance = null;
+
+        function addExpenses() {
+            expenses = [];
+
+            const categories = ['rent', 'food', 'other', 'emi', 'emergency', 'sip', 'insurance', 'health'];
+            categories.forEach(category => {
+                const amount = parseFloat(document.getElementById(`${category}-amount`).value) || 0;
+                if (amount > 0) {
+                    expenses.push({ category: category.charAt(0).toUpperCase() + category.slice(1), amount });
+                }
+            });
+
+            updateSummary();
+            updateChart();
+        }
+
+        function updateSummary() {
+            income = parseFloat(document.getElementById('income').value) || 0;
+            const totalExpenses = expenses.reduce((acc, curr) => acc + curr.amount, 0);
+            document.getElementById('total-expenses').innerText = totalExpenses.toFixed(2);
+            document.getElementById('balance').innerText = (income - totalExpenses).toFixed(2);
+        }
+
+        function updateChart() {
+            const ctx = document.getElementById('expenseChart').getContext('2d');
+            const categoryTotals = {};
+            expenses.forEach(expense => {
+                categoryTotals[expense.category] = (categoryTotals[expense.category] || 0) + expense.amount;
+            });
+            const labels = Object.keys(categoryTotals);
+            const data = Object.values(categoryTotals);
+
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+            chartInstance = new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        data: data,
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF', '#FF9F40', '#C9CBCF', '#FF4500']
+                    }]
+                }
+            });
+        }
+
+        // Function to clear all the data
+        function clearData() {
+            // Clear all input fields
+            document.getElementById('income').value = '';
+            const categories = ['rent', 'food', 'other', 'emi', 'emergency', 'sip', 'insurance', 'health'];
+            categories.forEach(category => {
+                document.getElementById(`${category}-amount`).value = '';
+            });
+
+            // Clear the summary
+            document.getElementById('total-expenses').innerText = '0.00';
+            document.getElementById('balance').innerText = '0.00';
+
+            // Clear the chart
+            if (chartInstance) {
+                chartInstance.destroy();
+            }
+
+            // Reset expenses array
+            expenses = [];
+        }
+    </script>
+</body>
+</html>
